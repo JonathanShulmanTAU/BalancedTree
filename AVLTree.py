@@ -20,8 +20,8 @@ class AVLNode(object):
     def __init__(self, key, value):
         self.key = key
         self.value = value
-        self.left = None
-        self.right = None
+        self.left = AVLNode.virtual_node()
+        self.right = AVLNode.virtual_node()
         self.parent = None
         self.height = -1
         self.size = 0
@@ -33,7 +33,12 @@ class AVLNode(object):
 	"""
 
     def is_real_node(self):
-        return False
+        return self.key is not None
+    
+    @staticmethod
+    def make_virtual_node():
+        node = AVLNode(None, None)
+        return node
 
 
 """
@@ -60,7 +65,19 @@ class AVLTree(object):
 	"""
 
     def search(self, key):
-        # Jonathan
+        if self.root is None:
+            return None
+
+        current_node = self.root
+        while current_node.is_real_node():
+            
+            if current_node.key == key:
+                return current_node
+            elif current_node.key < key:
+                current_node = current_node.right
+            else:
+                current_node = current_node.left
+        
         return None
 
 
@@ -88,8 +105,44 @@ class AVLTree(object):
 	"""
 
     def delete(self, node):
-        # Jonathan
-        return -1
+        if self.size() <= 1:
+            self.root = None
+            return 0
+        
+        if not node.left.is_real_node():
+            # if left is not a real node, swap node with right
+            self._transplant(node, node.right)
+        elif not node.right.is_real_node():
+            # if left is not a real node, swap node with left
+            self._transplant(node, node.left)
+        else:
+            # if node has 2 real children, find it's successor. 
+            # Swap the node with the successor and start rebalancing from
+            # it's parent.
+
+            successor = self.find_successor(node) # note: successor is not the root since it is in the
+            # nonempty right subtree of the deleted node, as it has 2 children.
+
+            rebalance_start = successor # rebalance start is the node above where the successor currently is,
+            #  which will end up being the successor as it will be bumped up by 1 if node.right != successor
+
+
+            if node.right != successor:
+                # need to swap the successor with its right child unless it will
+                # still remaim it's child, which happens only when node.right==successor.
+                
+                rebalance_start = successor.parent # fix rebalance start
+                self._transplant(successor, successor.right)
+                successor.right = node.right
+                node.right.parent = successor
+            successor.left = node.left
+            successor.left.parent = successor
+            self._transplant(node, successor)
+
+            return self.fix_subtree(rebalance_start)
+        
+        return 0
+
 
     """returns an array representing dictionary 
 
@@ -107,8 +160,10 @@ class AVLTree(object):
 	"""
 
     def size(self):
-        # Jonathan
-        return -1
+        if self.root is not None:
+            return 0
+        else:            
+            return self.root.size
 
     """compute the rank of node in the dictionary
 
@@ -155,8 +210,7 @@ class AVLTree(object):
 	"""
 
     def get_root(self):
-        # Jonathan
-        return None
+        return self.root
 
     def find_successor(self, node):
         # David
@@ -169,3 +223,12 @@ class AVLTree(object):
 	def search_in_order(self):
         # David
         return None
+    
+    def _transplant(self, u, v):
+        if u.parent is None:
+            self.root = v
+        elif u == u.parent.left:
+            u.parent.left = v
+        else:
+            u.parent.right = v
+        v.parent = u.parent
