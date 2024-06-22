@@ -76,7 +76,31 @@ class AVLTree(object):
 	"""
 
     def insert(self, key, val):
-        # David
+        # David - temp version, not avl
+        newNode = AVLNode(key, val)
+
+
+        if(self.root==None):
+            self.root=newNode
+
+        else:
+            temp = self.root
+            prev = None
+
+            while temp!=None:
+                prev = temp
+                #if smaller -left
+                if(temp.value<val):
+                    temp = temp.left
+                #if bigger go right
+                else:
+                    temp = temp.right
+
+            if (prev.value < val):
+                prev.left = newNode
+            else:
+                prev.right = newNode
+            
         return -1
 
     """deletes node from the dictionary
@@ -162,10 +186,10 @@ class AVLTree(object):
         # David
         return None
     
-	def fix_subtree(self, node):
+    def fix_subtree(self, node):
 		#TODO: later
         return None
     
-	def search_in_order(self):
+    def search_in_order(self):
         # David
         return None
