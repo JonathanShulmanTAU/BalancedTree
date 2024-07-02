@@ -1,8 +1,8 @@
 # username - complete info
 # id1      - complete info
 # name1    - complete info
-# id2      - complete info
-# name2    - complete info
+# id2      - 325149383
+# name2    - David Rozenblum
 
 
 """A class represnting a node in an AVL tree"""
@@ -20,8 +20,8 @@ class AVLNode(object):
     def __init__(self, key, value):
         self.key = key
         self.value = value
-        self.left = AVLNode.virtual_node()
-        self.right = AVLNode.virtual_node()
+        self.left = None
+        self.right = None
         self.parent = None
         self.height = -1
         self.size = 0
@@ -93,8 +93,34 @@ class AVLTree(object):
 	"""
 
     def insert(self, key, val):
-        # David
-        return -1
+        insertNode = AVLNode(key,val)
+        insertNode.size=1
+        insertNode.right, insertNode.left = AVLNode.make_virtual_node(),AVLNode.make_virtual_node() 
+        #if empty tree
+        if self.root==None:
+            self.root = insertNode
+            insertNode.size = 1
+            insertNode.height = 0
+            return 0
+        
+        tempNode = self.root
+        prevNode = None
+
+        while (tempNode.is_real_node()):
+            prevNode=tempNode
+            prevNode.size+=1
+            if (tempNode.key>key):
+                tempNode = tempNode.left
+            else:
+                tempNode = tempNode.right
+
+        insertNode.parent=prevNode
+        if (key>prevNode.key):
+            prevNode.right=insertNode
+        else:
+            prevNode.left=insertNode
+
+        return self.fix_subtree(insertNode)
 
     """deletes node from the dictionary
 
@@ -151,7 +177,23 @@ class AVLTree(object):
 	"""
 
     def avl_to_array(self):
-        return None
+        if self.root==None:
+            return []
+        ret = []
+        tempNode = self.root
+
+        #getting the min
+        while tempNode.left.is_real_node():
+            tempNode=tempNode.left
+        
+        #making the arr
+        i = 0
+        while tempNode!=None:
+            ret.append(tuple([tempNode.key,tempNode.value]))
+            tempNode = self.find_successor(tempNode)
+            i+=1
+
+        return ret
 
     """returns the number of items in dictionary 
 
@@ -175,7 +217,15 @@ class AVLTree(object):
 	"""
 
     def rank(self, node):
-        return -1
+        ret = node.left.size + 1
+        prev = node.parent
+
+        while (prev!=None):
+            if(node.key>prev.key):
+                ret += prev.left.size + 1
+            prev = prev.parent
+
+        return ret
 
     """finds the i'th smallest item (according to keys) in the dictionary
 
@@ -187,7 +237,21 @@ class AVLTree(object):
 	"""
 
     def select(self, i):
-        return None
+        node = self.root
+
+        while(node!=None):
+            #checking if found
+            if(i==node.left.size+1):
+                return node
+            
+            #continuing the search, if going left
+            if (i<node.left.size+1):
+                node=node.left
+            #else we go right, and adjust i
+            else:
+                i-=(node.left.size+1)
+                node=node.right
+        return node
 
     """finds the node with the largest value in a specified range of keys
 
@@ -213,14 +277,108 @@ class AVLTree(object):
         return self.root
 
     def find_successor(self, node):
-        # David
+        # if can go right
+        if (node.right.is_real_node()):
+            tempNode = node.right
+            #finding smallest in right sub-tree
+            while tempNode.left.is_real_node():
+                tempNode = tempNode.left
+
+            return tempNode
+        #going up, untill we find a larger predeccesor or get to the root and there is none
+        tempNode=node
+        while (tempNode.parent!=None) and tempNode.parent.key<tempNode.key:
+            tempNode=tempNode.parent
+
+        if tempNode.parent!=None:
+            return tempNode.parent
+
         return None
     
-	def fix_subtree(self, node):
-		#TODO: later
-        return None
+    def fix_subtree(self, node):
+        count = 0
+        
+        #fixing up to root
+        while(node!=None):
+            self.update_height(node)
+            BF = self.calcBalanceFactor(node) #BF-Balance Factor
+
+            ###if crimial###
+            #if to the left
+            if(BF==-2):
+                #checking if needed two rotations (right before left)
+                if (self.calcBalanceFactor(node.right)==1):
+                    self.rightRotation(node.right)
+                    count+=1
+                #in any case preform left rotation
+                self.leftRotation(node)
+                count+=1
+            #if to the right
+            elif(BF==2):
+                #checking if needed two rotations (left before right)
+                if (self.calcBalanceFactor(node.left)==-1):
+                    self.leftRotation(node.left)
+                    count+=1
+                #rebalncing it all
+                self.rightRotation(node)
+                count+=1
+            
+            ###### End of corrections
+            #going up the tree
+            node = node.parent
+
+        return count
+
+    def update_height(self,node):
+        node.height = max(node.left.height, node.right.height)+1
+
+    def calcBalanceFactor(self,node):
+        return node.left.height-node.right.height
     
-	def search_in_order(self):
+    def rightRotation(self, origin):
+        #the node from the left will sub our original node
+        final = origin.left
+        temp = final.right
+        #preforming rotation
+        final.right=origin
+        origin.right=temp
+        #updating values
+        if (origin.parent == None):
+            self.root=final
+        elif origin.parent.key>origin.key:
+            origin.parent.left=final
+        else:
+            origin.parent.right=final
+        self.update_height(origin)
+        self.update_height(final)
+        final.parent = origin.parent
+        origin.parent = final
+        origin.size = origin.left.size+origin.right.size+1
+        final.size = origin.size+final.left.size+1
+
+
+    def leftRotation(self, origin):
+        #the node from the left will sub our original node
+        final = origin.right
+        temp = final.left
+        #preforming rotation
+        final.left=origin
+        origin.right=temp
+        #updating values
+        if (origin.parent == None):
+            self.root=final
+        elif origin.parent.key>origin.key:
+            origin.parent.left=final
+        else:
+            origin.parent.right=final
+        self.update_height(origin)
+        self.update_height(final)
+        final.parent = origin.parent
+        origin.parent = final
+        origin.size = origin.left.size+origin.right.size+1
+        final.size = origin.size+final.right.size+1
+
+    def search_in_order(self):
         # David
         return None
     
@@ -232,3 +390,5 @@ class AVLTree(object):
         else:
             u.parent.right = v
         v.parent = u.parent
+
+   
