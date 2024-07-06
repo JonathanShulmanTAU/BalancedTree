@@ -349,14 +349,16 @@ class AVLTree(object):
 
     def max_range(self, a, b):
         maxVal = None
+        maxI=None
 
         arrAvl=self.avl_to_array()
 
         for i in arrAvl:
             if b>= i[0] >=a and (maxVal == None or i[1]> maxVal):
                 maxVal=i[1]
+                maxI=i[0]
         
-        return self.search(i[0])
+        return self.search(maxI)
 
 
     """returns the root of the tree representing the dictionary
